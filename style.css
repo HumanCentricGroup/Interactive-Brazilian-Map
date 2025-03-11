@@ -22,8 +22,8 @@ h1 {
 /* Esempio di stile per il testo dei ristoranti */
 .restaurant-name {
     font-family: 'Glacial Indifference', sans-serif;
+    color: red;
     font-size: 18px;
     font-weight: bold;
-    color: #333;
     margin: 5px 0;
 }
