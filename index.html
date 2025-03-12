@@ -1,3 +1,4 @@
+%%writefile index.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,15 +25,20 @@
     // Function to add markers with popups displaying name, address, and reviews number
     function addMarkers(data) {
       data.forEach(function(row) {
+        console.log("Row:", row); // Debug: Log each row to inspect its data
         var lat = parseFloat(row.Latitude);
         var lon = parseFloat(row.Longitude);
         if (!isNaN(lat) && !isNaN(lon)) {
           var marker = L.marker([lat, lon]).addTo(map);
+          // Add fallback in case the reviews field is missing or empty
+          var reviews = row["Numero_Recensioni"] ? row["Numero_Recensioni"] : "N/A";
           marker.bindPopup(
             "<strong>" + row["Place Name"] + "</strong><br>" +
             row.Address + "<br>" +
-            "Number of Reviews: " + row["Numero_Recensioni"]
+            "Number of Reviews: " + reviews
           );
+        } else {
+          console.warn("Invalid coordinates for row:", row);
         }
       });
     }
@@ -55,4 +61,3 @@
   </script>
 </body>
 </html>
-
