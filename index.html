@@ -8,11 +8,33 @@
   <link rel="stylesheet" href="styles.css" />
   <style>
     #map { height: 90vh; width: 100%; }
+    /* Style for the filter control */
+    #filterControl {
+      position: absolute;
+      top: 70px; /* below the logos */
+      right: 10px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    #filterControl label {
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
   <h1>Interactive Map of Portugal</h1>
   <div id="map"></div>
+  
+  <!-- Filter control -->
+  <div id="filterControl">
+    <label for="minReviews">Minimum Reviews:</label>
+    <input type="number" id="minReviews" value="0" min="0" style="width:60px;">
+    <button onclick="applyFilter()">Apply Filter</button>
+  </div>
+  
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script>
@@ -22,23 +44,69 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Function to add markers with popups displaying name, address, and reviews number
+    // Create a custom control to display the logos in the top left corner
+    L.Control.Logos = L.Control.extend({
+      onAdd: function(map) {
+        var div = L.DomUtil.create('div', 'leaflet-control-logos');
+        div.style.background = 'rgba(255, 255, 255, 0.9)';
+        div.style.padding = '5px';
+        div.style.borderRadius = '5px';
+        div.innerHTML = '<img src="hcg.png" alt="Human Centric Group" style="width:50px; margin-right:5px;">' +
+                        '<img src="sb.png" alt="Super Bock" style="width:50px;">';
+        return div;
+      },
+      onRemove: function(map) {}
+    });
+    L.control.logos = function(opts) {
+      return new L.Control.Logos(opts);
+    }
+    L.control.logos({ position: 'topleft' }).addTo(map);
+
+    // Define a custom icon for all markers
+    var customIcon = L.icon({
+      iconUrl: 'marker.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32]
+    });
+
+    // Global array to store marker objects
+    var allMarkers = [];
+
+    // Function to add markers with popups displaying name, address, and number of Brazilian reviews
     function addMarkers(data) {
       data.forEach(function(row) {
-        console.log("Row:", row); // Debug: Log each row to inspect its data
         var lat = parseFloat(row.Latitude);
         var lon = parseFloat(row.Longitude);
         if (!isNaN(lat) && !isNaN(lon)) {
-          var marker = L.marker([lat, lon]).addTo(map);
-          // Add fallback in case the reviews field is missing or empty
-          var reviews = row["Numero_Recensioni"] ? row["Numero_Recensioni"] : "N/A";
+          // Create marker using the custom icon
+          var marker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
+          // Save the review count as a property on the marker (parsed as integer)
+          marker.reviewCount = parseInt(row["Numero_Recensioni"]) || 0;
+          // Bind popup with details
           marker.bindPopup(
             "<strong>" + row["Place Name"] + "</strong><br>" +
             row.Address + "<br>" +
-            "Number of Reviews: " + reviews
+            "Number of Brazilian Reviews: " + marker.reviewCount
           );
+          allMarkers.push(marker);
+        }
+      });
+    }
+
+    // Filter function to show only markers that meet the minimum reviews criteria
+    function applyFilter() {
+      var minReviews = parseInt(document.getElementById("minReviews").value) || 0;
+      // Loop through markers and add/remove based on the filter criteria
+      allMarkers.forEach(function(marker) {
+        if (marker.reviewCount >= minReviews) {
+          if (!map.hasLayer(marker)) {
+            marker.addTo(map);
+          }
         } else {
-          console.warn("Invalid coordinates for row:", row);
+          if (map.hasLayer(marker)) {
+            map.removeLayer(marker);
+          }
         }
       });
     }
