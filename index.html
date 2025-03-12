@@ -1,16 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Interactive Map of Portugal</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css" />
   <style>
-    #map { height: 90vh; width: 100%; }
-    /* Style for the filter control */
+    /* Basic layout */
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Header container to align logos and title */
+    #header {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      gap: 10px;
+      background-color: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    #header .logo {
+      width: 50px;
+      height: auto;
+    }
+    #header h1 {
+      font-size: 1.5em;
+      margin: 0;
+    }
+
+    /* Map and filter */
+    #map {
+      height: 85vh;
+      width: 100%;
+    }
     #filterControl {
       position: absolute;
-      top: 70px; /* below the logos */
+      top: 60px; /* Adjust if needed */
       right: 10px;
       z-index: 1000;
       background: rgba(255, 255, 255, 0.9);
@@ -24,7 +51,14 @@
   </style>
 </head>
 <body>
-  <h1>Interactive Map of Portugal</h1>
+  <!-- Header with logos and title -->
+  <div id="header">
+    <img src="hcg.png" alt="Human Centric Group" class="logo" />
+    <img src="sb.png" alt="Super Bock" class="logo" />
+    <h1>Interactive Map of Portugal</h1>
+  </div>
+
+  <!-- Map container -->
   <div id="map"></div>
   
   <!-- Filter control -->
@@ -33,9 +67,11 @@
     <input type="number" id="minReviews" value="0" min="0" style="width:60px;">
     <button onclick="applyFilter()">Apply Filter</button>
   </div>
-  
+
+  <!-- Leaflet and PapaParse -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
   <script>
     // Initialize the map centered on Portugal
     var map = L.map('map').setView([39.5, -8.0], 7);
@@ -43,60 +79,45 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Create a custom control to display the logos in the top left corner
-    L.Control.Logos = L.Control.extend({
-      onAdd: function(map) {
-        var div = L.DomUtil.create('div', 'leaflet-control-logos');
-        div.style.background = 'rgba(255, 255, 255, 0.9)';
-        div.style.padding = '5px';
-        div.style.borderRadius = '5px';
-        div.innerHTML = '<img src="hcg.png" alt="Human Centric Group" style="width:50px; margin-right:5px;">' +
-                        '<img src="sb.png" alt="Super Bock" style="width:50px;">';
-        return div;
-      },
-      onRemove: function(map) {}
-    });
-    L.control.logos = function(opts) {
-      return new L.Control.Logos(opts);
-    }
-    L.control.logos({ position: 'topleft' }).addTo(map);
-
-    // Define a custom icon for all markers
+    // Custom icon for the markers (resized to avoid blurriness)
     var customIcon = L.icon({
       iconUrl: 'marker.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32]
+      iconSize: [25, 40],      // Adjust to your preference
+      iconAnchor: [12, 40],    // Adjust so the tip points at the correct location
+      popupAnchor: [0, -40]
     });
 
-    // Global array to store marker objects
+    // Global array to store all marker objects
     var allMarkers = [];
 
-    // Function to add markers with popups displaying name, address, and number of Brazilian reviews
+    // Function to add markers
     function addMarkers(data) {
       data.forEach(function(row) {
         var lat = parseFloat(row.Latitude);
         var lon = parseFloat(row.Longitude);
         if (!isNaN(lat) && !isNaN(lon)) {
-          // Create marker using the custom icon
+          // Create marker with the custom icon
           var marker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
-          // Save the review count as a property on the marker (parsed as integer)
+          
+          // Parse review count as integer, store it on the marker
           marker.reviewCount = parseInt(row["Numero_Recensioni"]) || 0;
+
           // Bind popup with details
           marker.bindPopup(
             "<strong>" + row["Place Name"] + "</strong><br>" +
             row.Address + "<br>" +
             "Number of Brazilian Reviews: " + marker.reviewCount
           );
+          
+          // Push marker into global array
           allMarkers.push(marker);
         }
       });
     }
 
-    // Filter function to show only markers that meet the minimum reviews criteria
+    // Filter function
     function applyFilter() {
       var minReviews = parseInt(document.getElementById("minReviews").value) || 0;
-      // Loop through markers and add/remove based on the filter criteria
       allMarkers.forEach(function(marker) {
         if (marker.reviewCount >= minReviews) {
           if (!map.hasLayer(marker)) {
@@ -110,10 +131,8 @@
       });
     }
 
-    // CSV file URL (ensure the CSV file is accessible and in the correct location)
-    var csvUrl = 'temp_recensioni_con_coordinate.csv';
-    
-    // Parse CSV and add markers
+    // Load CSV and add markers
+    var csvUrl = 'temp_recensioni_con_coordinate.csv';  // Update if needed
     Papa.parse(csvUrl, {
       download: true,
       header: true,
