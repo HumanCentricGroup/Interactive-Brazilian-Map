@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Interactive Map of Portugal</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    #map { height: 90vh; width: 100%; }
+  </style>
+</head>
+<body>
+  <h1>Interactive Map of Portugal</h1>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+    // Initialize the map centered on Portugal
+    var map = L.map('map').setView([39.5, -8.0], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Function to add markers with popups displaying name, address, and reviews number
+    function addMarkers(data) {
+      data.forEach(function(row) {
+        var lat = parseFloat(row.Latitude);
+        var lon = parseFloat(row.Longitude);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          var marker = L.marker([lat, lon]).addTo(map);
+          marker.bindPopup(
+            "<strong>" + row["Place Name"] + "</strong><br>" +
+            row.Address + "<br>" +
+            "Number of Reviews: " + row["Numero_Recensioni"]
+          );
+        }
+      });
+    }
+
+    // CSV file URL (ensure the CSV file is accessible and in the correct location)
+    var csvUrl = 'temp_recensioni_con_coordinate.csv';
+    
+    // Parse CSV and add markers
+    Papa.parse(csvUrl, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        console.log("CSV loaded:", results.data);
+        addMarkers(results.data);
+      },
+      error: function(error) {
+        console.error("Error loading CSV:", error);
+      }
+    });
+  </script>
+</body>
+</html>
+
