@@ -49,6 +49,15 @@
       margin-right: 5px;
     }
   </style>
+  <script>
+    function checkPassword() {
+        const password = prompt("Enter the password:");
+        if (password !== "macarena") {
+            alert("Incorrect password. Access denied.");
+            document.body.innerHTML = ""; // Clears page content
+        }
+    }
+    window.o
 </head>
 <body>
   <!-- Header with logos and title -->
