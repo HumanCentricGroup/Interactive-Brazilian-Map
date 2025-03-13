@@ -10,6 +10,7 @@
     body {
       margin: 0;
       padding: 0;
+      display: none; /* Hide content until password is verified */
     }
 
     /* Header container to align logos and title */
@@ -37,7 +38,7 @@
     }
     #filterControl {
       position: absolute;
-      top: 60px; /* Adjust if needed */
+      top: 60px;
       right: 10px;
       z-index: 1000;
       background: rgba(255, 255, 255, 0.9);
@@ -49,49 +50,41 @@
       margin-right: 5px;
     }
   </style>
-<script>
+  <script>
     function checkPassword() {
-        const correctPassword = "yourSecretPassword";
+        const correctPassword = "macarena";
         let userPassword = prompt("Enter the password:");
 
-        while (userPassword !== correctPassword) {
-            alert("Incorrect password. Try again.");
-            userPassword = prompt("Enter the password:");
+        if (userPassword === correctPassword) {
+            document.body.style.display = "block"; // Show content if password is correct
+        } else {
+            alert("Incorrect password. Redirecting...");
+            window.location.href = "https://google.com"; // Redirect on failure
         }
     }
     window.onload = checkPassword;
-</script>
+  </script>
 </head>
 <body>
-  <!-- Header with logos and title -->
   <div id="header">
     <img src="hcg.png" alt="Human Centric Group" class="logo" />
     <img src="sb.png" alt="Super Bock" class="logo" />
     <h1>Interactive Map of Portugal</h1>
   </div>
-
-  <!-- Map container -->
   <div id="map"></div>
-  
-  <!-- Filter control -->
   <div id="filterControl">
     <label for="minReviews">Minimum Reviews:</label>
     <input type="number" id="minReviews" value="0" min="0" style="width:60px;">
     <button onclick="applyFilter()">Apply Filter</button>
   </div>
-
-  <!-- Leaflet and PapaParse -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
   <script>
-    // Initialize the map centered on Portugal
     var map = L.map('map').setView([39.5, -8.0], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-     // Use an orange marker icon from leaflet-color-markers
     var customIcon = L.icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -101,35 +94,21 @@
       shadowSize: [41, 41]
     });
 
-    // Global array to store all marker objects
     var allMarkers = [];
 
-    // Function to add markers
     function addMarkers(data) {
       data.forEach(function(row) {
         var lat = parseFloat(row.Latitude);
         var lon = parseFloat(row.Longitude);
         if (!isNaN(lat) && !isNaN(lon)) {
-          // Create marker with the custom icon
           var marker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
-          
-          // Parse review count as integer, store it on the marker
           marker.reviewCount = parseInt(row["Numero_Recensioni"]) || 0;
-
-          // Bind popup with details
-          marker.bindPopup(
-            "<strong>" + row["Place Name"] + "</strong><br>" +
-            row.Address + "<br>" +
-            "Number of Brazilian Reviews: " + marker.reviewCount
-          );
-          
-          // Push marker into global array
+          marker.bindPopup("<strong>" + row["Place Name"] + "</strong><br>" + row.Address + "<br>" + "Number of Brazilian Reviews: " + marker.reviewCount);
           allMarkers.push(marker);
         }
       });
     }
 
-    // Filter function
     function applyFilter() {
       var minReviews = parseInt(document.getElementById("minReviews").value) || 0;
       allMarkers.forEach(function(marker) {
@@ -145,8 +124,7 @@
       });
     }
 
-    // Load CSV and add markers
-    var csvUrl = 'temp_recensioni_con_coordinate.csv';  // Update if needed
+    var csvUrl = 'temp_recensioni_con_coordinate.csv';
     Papa.parse(csvUrl, {
       download: true,
       header: true,
